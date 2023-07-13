@@ -12,6 +12,9 @@ import useFetch from "../customHook/useFetch";
 import { RootStackParamList } from "../App";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import Spinner from "../components/Spinner";
+import { useUserId } from "../customHook/useUserId";
+import { addFavorit } from "../API/addFavorit";
+import { deleteFavorit } from "../API/deleteFavorit";
 
 type StoreDetailProps = NativeStackScreenProps<
   RootStackParamList,
@@ -20,16 +23,36 @@ type StoreDetailProps = NativeStackScreenProps<
 
 export default function StoreDetailView({ route }: StoreDetailProps) {
   const storeId = route.params.id;
+  const userId = useUserId();
   const [isTabType, setIsTabType] = useState<"홈" | "리뷰">("홈");
   const [reviewData, setReviewData] = useState<ReviewResponseType>({
     hasNext: false,
     total: 0,
     reviews: [],
   });
+  const [favoritAdd, setFavoritAdd] = useState(false);
 
   const { data, isLoading, error } = useFetch<StoreDetailType>(
     `api/store/${storeId}`
   );
+
+  const favoritClickChange = async (favoritStatus: boolean) => {
+    if (favoritAdd) {
+      if (userId !== null) {
+        const response = await addFavorit({ userId: userId });
+        if (response === 200) {
+          setFavoritAdd(favoritStatus);
+        }
+      }
+    } else {
+      if (userId !== null) {
+        const response = await deleteFavorit({ userId: userId });
+        if (response === 200) {
+          setFavoritAdd(favoritStatus);
+        }
+      }
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -73,7 +96,12 @@ export default function StoreDetailView({ route }: StoreDetailProps) {
               <TabSwitcher setIsTabType={setIsTabType} />
             </View>
             {isTabType === "홈" ? (
-              <DetailHomeView storeDetails={data} />
+              <DetailHomeView
+                favoritClickChange={favoritClickChange}
+                storeDetails={data}
+                favoritAdd={favoritAdd}
+                userId={userId}
+              />
             ) : (
               <DetailReviewView
                 storeId={storeId}
