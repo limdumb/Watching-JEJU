@@ -1,6 +1,10 @@
 import { type NavigationProp, useNavigation } from "@react-navigation/native";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { type RootStackParamList } from "../App";
 import StoreCard, { StoreCardType } from "../components/MainView/StoreCard";
 import Header from "../components/Header";
@@ -8,12 +12,15 @@ import { emdNameArray } from "../function/emdNameArray";
 import AdressBox from "../components/AdressBox";
 import useFetch from "../customHook/useFetch";
 import Spinner from "../components/Spinner";
+import CustomText from "../components/CustomText";
+import { isCloseToBottom } from "../function/isCloseToBottom";
 
 export interface StoreListDataType {
-  total: number
-  hasNext: boolean
-  stores: StoreCardType[]
+  total: number;
+  hasNext: boolean;
+  stores: StoreCardType[];
 }
+
 
 export type MainScreenNavigationProps = NavigationProp<
   RootStackParamList,
@@ -21,22 +28,36 @@ export type MainScreenNavigationProps = NavigationProp<
 >;
 
 export default function MainView() {
+  const navigate = useNavigation<MainScreenNavigationProps>();
   const [pages, setPages] = useState(0);
   const [adressValue, setAdressValue] = useState("");
   const { data, isLoading, error } = useFetch<StoreListDataType>(
     `/api/store/list?emdName=${adressValue}&page=${pages}`
   );
   const adressArr = emdNameArray();
+  const onEndCatched = () => {
+    if (data.hasNext) {
+      setPages(pages + 1);
+    }
+  };
 
-  const navigate = useNavigation<MainScreenNavigationProps>();
   return (
     <View style={styles.container}>
       <Header />
-      <ScrollView style={styles.scrollViewContainer}>
+      <ScrollView
+        style={styles.scrollViewContainer}
+        onScrollEndDrag={({nativeEvent}) => {
+          const bottomResult = isCloseToBottom(nativeEvent)
+          if (bottomResult) {
+            onEndCatched();
+          }
+        }}
+      >
         <View style={styles.map}>
           {adressArr.map((el) => {
             return (
               <AdressBox
+                key={el.name}
                 name={el.name}
                 adress={el.adress}
                 setAdressValue={setAdressValue}
@@ -46,15 +67,19 @@ export default function MainView() {
           })}
         </View>
         <View style={styles.storeListContainer}>
-          <Text style={styles.storeListTitle}>카페리스트</Text>
+          <CustomText
+            children="카페 리스트"
+            fontSize="20px"
+            fontWeight="bold"
+          />
           <View style={styles.storeList}>
             {!isLoading ? (
               <>
-                {data?.stores.length !== 0
-                  ? data?.stores.map((el) => {
+                {data?.stores.length !== 0 ? (
+                  <>
+                    {data.stores.map((el) => {
                       return (
                         <StoreCard
-                          key={el.id}
                           navigate={navigate}
                           id={el.id}
                           imageUrl={el.imageUrl}
@@ -63,8 +88,10 @@ export default function MainView() {
                           storeStatus={el.storeStatus}
                         />
                       );
-                    })
-                  : null}
+                    })}
+                  </>
+                ) :
+                null}
               </>
             ) : (
               <Spinner />
@@ -101,12 +128,13 @@ const styles = StyleSheet.create({
   storeListTitle: {
     fontSize: 20,
     fontWeight: "bold",
+    color: "black",
   },
   storeListContainer: {
     flex: 1,
     width: "100%",
     padding: 20,
-    backgroundColor: "white",
+    minHeight: "70%",
   },
   storeList: {
     flexDirection: "row",
@@ -114,6 +142,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     justifyContent: "space-between",
     width: "100%",
+    minHeight: "70%",
     marginTop: 20,
   },
 });

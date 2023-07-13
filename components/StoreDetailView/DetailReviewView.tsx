@@ -1,8 +1,9 @@
 import { NavigationProp, useNavigation } from "@react-navigation/native";
+import { FlatList, ListRenderItemInfo } from "react-native";
 import { Alert, StyleSheet } from "react-native";
 import { TouchableOpacity, View } from "react-native";
 import PenIcon from "react-native-vector-icons/FontAwesome5";
-import { type ReviewResponseType } from "../../API/getReviewList";
+import { ReviewType, type ReviewResponseType } from "../../API/getReviewList";
 import { RootStackParamList } from "../../App";
 import { useUserId } from "../../customHook/useUserId";
 import CustomText from "../CustomText";
@@ -11,13 +12,30 @@ import ReviewBox from "./ReviewBox";
 
 interface Props extends ReviewResponseType {
   storeId: number;
+  onEndCatched: () => void;
 }
 
 export default function DetailReviewView(props: Props) {
   const userId = useUserId();
   const tabArr = [{ tabName: "최신순" }, { tabName: "추천순" }];
   const navigate = useNavigation<NavigationProp<RootStackParamList>>();
-
+  const renderReviews = (item: ReviewType) => {
+    return (
+      <ReviewBox
+        rating={item.rating}
+        storeId={props.storeId}
+        key={item.id}
+        id={item.id}
+        userName={item.userName}
+        userProfileImage={item.userProfileImage}
+        reviewImages={item.reviewImages}
+        reviewText={item.reviewText}
+        loginUserId={userId}
+        userId={item.userId}
+        navigate={navigate}
+      />
+    );
+  };
   return (
     <View>
       <View style={styles.reviewTabContainer}>
@@ -42,25 +60,12 @@ export default function DetailReviewView(props: Props) {
         </View>
       </View>
       {props.reviews.length !== 0 ? (
-        <>
-          {props.reviews.map((el) => {
-            return (
-              <ReviewBox
-                rating={el.rating}
-                storeId={props.storeId}
-                key={el.id}
-                id={el.id}
-                userName={el.userName}
-                userProfileImage={el.userProfileImage}
-                reviewImages={el.reviewImages}
-                reviewText={el.reviewText}
-                loginUserId={userId}
-                userId={el.userId}
-                navigate={navigate}
-              />
-            );
-          })}
-        </>
+        <FlatList
+          data={props.reviews}
+          renderItem={(item) => renderReviews(item.item)}
+          onEndReached={props.onEndCatched}
+          onEndReachedThreshold={0.8}
+        />
       ) : (
         <NotFoundImage />
       )}

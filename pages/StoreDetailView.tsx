@@ -31,6 +31,13 @@ export default function StoreDetailView({ route }: StoreDetailProps) {
     reviews: [],
   });
   const [favoritAdd, setFavoritAdd] = useState(false);
+  const [pages, setPages] = useState(0);
+
+  const onEndCatched = () => {
+    if (reviewData.hasNext) {
+      setPages(pages + 1);
+    }
+  };
 
   const { data, isLoading, error } = useFetch<StoreDetailType>(
     `api/store/${storeId}`
@@ -104,6 +111,7 @@ export default function StoreDetailView({ route }: StoreDetailProps) {
               />
             ) : (
               <DetailReviewView
+                onEndCatched={onEndCatched}
                 storeId={storeId}
                 hasNext={reviewData.hasNext}
                 total={reviewData.total}
